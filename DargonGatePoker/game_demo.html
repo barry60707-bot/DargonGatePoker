@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>撲克牌射龍門 Demo (優化版)</title>
+    <style>
+        /* 基礎樣式 (沿用) */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #1a1a1a;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #game-area {
+            width: 800px;
+            background-color: #006400;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            min-height: 550px;
+        }
+
+        /* -------------------- 玩家資訊/計時器 -------------------- */
+        
+        #player-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px;
+            background-color: #333;
+            border-radius: 8px;
+            font-size: 1.2em;
+        }
+
+        #timer-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            background-color: #f0ad4e;
+            color: #333;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.5em;
+            width: 100px; 
+            text-align: center;
+            display: none;
+            z-index: 10;
+        }
+
+        /* -------------------- 下注座位 (四個座位) -------------------- */
+        
+        #betting-spots {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 300px; 
+        }
+
+        .bet-spot {
+            width: 120px; 
+            height: 100px;
+            border: 3px dashed #ffeb3b;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .bet-spot.locked {
+            opacity: 0.5; 
+            cursor: not-allowed;
+        }
+
+        .bet-spot.active-bet {
+            border-color: #f0ad4e;
+            box-shadow: 0 0 10px #f0ad4e;
+        }
+
+        .bet-spot:not(.locked):hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .current-bet {
+            margin-top: 5px;
+            font-size: 1.2em;
+            color: #ffcc00;
+            font-weight: bold;
+        }
+
+        /* -------------------- 籌碼選擇 (圖片化) -------------------- */
+        
+        #chip-selection {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chip-wrapper {
+            cursor: pointer;
+            border: 4px solid transparent; 
+            border-radius: 50%;
+            transition: border 0.1s;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .chip-wrapper img {
+            width: 65px; 
+            height: 65px;
+            display: block;
+        }
+
+        .chip-wrapper.selected-chip {
+            border: 4px solid #ffcc00; 
+            box-shadow: 0 0 15px #ffeb3b;
+        }
+
+        /* -------------------- 卡牌顯示區 (關鍵修改) -------------------- */
+        #card-wrapper {
+            position: absolute;
+            width: 0px; 
+            left: 0;
+            top: 100px; 
+            transition: width 0.5s, left 0.5s;
+        }
+
+        #card-display {
+            display: flex;
+            /* 讓項目居中排列，並從頂部對齊 */
+            justify-content: center;
+            align-items: flex-start; /* 讓卡牌從頂部對齊 */
+            gap: 10px; 
+            min-height: 150px; 
+            position: relative;
+            transform: scale(1); 
+            transform-origin: center center;
+        }
+
+        .card {
+            width: 80px;
+            height: 120px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            /* 過渡效果 */
+            transition: margin-top 0.5s, transform 0.5s, box-shadow 0.5s, filter 0.5s; 
+        }
+        
+        /* 射門牌樣式：將第三張牌往上抬，並放在中間兩張牌的上方空間 */
+        .card:nth-child(3) {
+            margin-top: -60px; /* 向上抬高，使其與前兩張牌重疊 */
+            z-index: 5; /* 確保它在上面 */
+        }
+        
+        /* -------------------- 結果視覺回饋 (新增) -------------------- */
+        
+        /* 成功發光樣式 */
+        .card.win {
+            box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.8), 
+                        0 0 5px 1px rgba(255, 255, 255, 0.8); /* 金色發光 */
+            transform: scale(1.05); /* 輕微放大 */
+        }
+
+        /* 失敗置灰樣式 */
+        .card.lose {
+            filter: grayscale(100%) brightness(0.7); /* 變灰且變暗 */
+            opacity: 0.7;
+        }
+
+        /* -------------------- 動作按鈕 (沿用) -------------------- */
+        #action-buttons {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            opacity: 0; 
+            transition: opacity 0.5s;
+        }
+
+        #action-buttons.active {
+            opacity: 1;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .action-btn img {
+            width: 120px; 
+            height: auto;
+            border-radius: 5px;
+        }
+
+        .action-btn:disabled img {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        #message-area {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #ccc;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>🃏 射龍門</h1>
+
+    <div id="game-area">
+
+        <div id="player-info">
+            籌碼：<span id="player-chips">10000</span>
+        </div>
+
+        <div id="timer-display">
+            10
+        </div>
+
+        <div id="card-wrapper">
+            <div id="card-display">
+                </div>
+        </div>
+
+        <div id="betting-spots">
+            <div class="bet-spot" data-spot="1">
+                座位 1
+                <span class="current-bet">籌碼: 0</span>
+            </div>
+            <div class="bet-spot" data-spot="2">
+                座位 2
+                <span class="current-bet">籌碼: 0</span>
+            </div>
+            <div class="bet-spot" data-spot="3">
+                座位 3
+                <span class="current-bet">籌碼: 0</span>
+            </div>
+            <div class="bet-spot" data-spot="4">
+                座位 4
+                <span class="current-bet">籌碼: 0</span>
+            </div>
+        </div>
+
+        <div id="chip-selection">
+            <div class="chip-wrapper" data-amount="100">
+                <img src="assets/chip_100.png" alt="100籌碼">
+            </div>
+            <div class="chip-wrapper" data-amount="500">
+                <img src="assets/chip_500.png" alt="500籌碼">
+            </div>
+            <div class="chip-wrapper" data-amount="1000">
+                <img src="assets/chip_1000.png" alt="1000籌碼">
+            </div>
+            <div class="chip-wrapper" data-amount="5000">
+                <img src="assets/chip_5000.png" alt="5000籌碼">
+            </div>
+        </div>
+
+        <div id="action-buttons">
+            <button id="shoot-btn" class="action-btn" disabled>
+                <img src="assets/btn_shoot.png" alt="射門">
+            </button>
+            <button id="fold-btn" class="action-btn" disabled>
+                <img src="assets/btn_fold.png" alt="棄牌">
+            </button>
+        </div>
+
+    </div>
+
+    <div id="message-area">
+        請選擇籌碼並點擊一個座位開始下注。
+    </div>
+
+    <script>
+        // -------------------- 遊戲變數與狀態 (沿用) --------------------
+        const SUITS = ['C', 'D', 'H', 'S']; 
+        const CARD_RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        const cardValueMap = { 'A': 1, 'J': 11, 'Q': 12, 'K': 13 };
+
+        let playerChips = 10000;
+        let selectedChipAmount = 0;
+        let activeSpotId = null; 
+        let totalBet = 0; 
+
+        let dealtCards = []; 
+        let gamePhase = 'betting'; 
+        let timerId = null; 
+        const BETTING_TIME = 10; 
+        const POST_GAME_TIME = 5; 
+
+        // -------------------- DOM 元素 (沿用) --------------------
+        const playerChipsDisplay = document.getElementById('player-chips');
+        const chipWrappers = document.querySelectorAll('.chip-wrapper');
+        const betSpots = document.querySelectorAll('.bet-spot'); 
+        const messageArea = document.getElementById('message-area');
+        const cardDisplay = document.getElementById('card-display');
+        const cardWrapper = document.getElementById('card-wrapper');
+        const actionButtons = document.getElementById('action-buttons');
+        const shootBtn = document.getElementById('shoot-btn');
+        const foldBtn = document.getElementById('fold-btn');
+        const timerDisplay = document.getElementById('timer-display');
+
+
+        // -------------------- 輔助函式 (沿用) --------------------
+        function getCardValue(cardSymbolRank) {
+            const rank = cardSymbolRank.split('_')[0];
+            return cardValueMap[rank] || parseInt(rank);
+        }
+
+        function drawCard() {
+            let card = '';
+            let attempts = 0;
+            const maxAttempts = 52 * 5; 
+
+            do {
+                const randomSuit = SUITS[Math.floor(Math.random() * SUITS.length)];
+                const randomRank = CARD_RANKS[Math.floor(Math.random() * CARD_RANKS.length)];
+                card = `${randomRank}_${randomSuit}`;
+                attempts++;
+            } while (dealtCards.includes(card) && attempts < maxAttempts);
+
+            if (attempts >= maxAttempts) {
+                card = `${CARD_RANKS[0]}_${SUITS[0]}`; 
+            }
+
+            dealtCards.push(card);
+            return card;
+        }
+
+        // -------------------- 渲染卡牌 (新增結果樣式處理) --------------------
+        // result: 'win', 'lose', 'none'
+        function renderCards(card1 = null, card2 = null, card3 = null, result = 'none') {
+            cardDisplay.innerHTML = '';
+            
+            const allCards = [card1, card2, card3];
+            const cardsToRender = allCards.filter(c => c !== null); 
+
+            cardsToRender.forEach((cardSymbol, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                
+                let imageUrl = '';
+                if (cardSymbol === 'BACK') {
+                    imageUrl = `assets/card_back.png`; 
+                } else {
+                    imageUrl = `assets/card_${cardSymbol}.png`; 
+                }
+
+                cardElement.style.backgroundImage = `url('${imageUrl}')`;
+                
+                // 應用結果樣式 (僅在遊戲結束時應用)
+                if (result !== 'none') {
+                    cardElement.classList.add(result);
+                }
+                
+                cardDisplay.appendChild(cardElement);
+            });
+
+            if (cardsToRender.length > 0) {
+                const cardWidth = 80;
+                const cardGap = 10;
+                const cardDisplayWidth = (cardsToRender.length * cardWidth) + ((cardsToRender.length - 1) * cardGap);
+                cardWrapper.style.width = `${cardDisplayWidth}px`;
+            } else {
+                cardWrapper.style.width = `0px`;
+            }
+        }
+        
+        function positionCardDisplay(spotId) {
+            const spotElement = document.querySelector(`.bet-spot[data-spot="${spotId}"]`);
+            if (!spotElement) return;
+
+            const spotRect = spotElement.getBoundingClientRect();
+            const gameAreaRect = document.getElementById('game-area').getBoundingClientRect();
+            
+            const spotCenter = spotRect.left + spotRect.width / 2 - gameAreaRect.left;
+            
+            const cardDisplayWidth = parseInt(cardWrapper.style.width) || 260;
+            const newLeft = spotCenter - cardDisplayWidth / 2;
+
+            cardWrapper.style.left = `${newLeft}px`;
+        }
+
+
+        // -------------------- 計時器/UI/狀態控制 (沿用) --------------------
+        
+        function startAutoNewGameTimer(seconds) {
+            gamePhase = 'game_over_auto_restart'; 
+            let timeLeft = seconds;
+            
+            timerDisplay.textContent = `下一局: ${timeLeft}s`;
+            timerDisplay.style.display = 'block';
+            
+            if (timerId) {
+                clearInterval(timerId);
+            }
+            
+            timerId = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = `下一局: ${timeLeft}s`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerId);
+                    timerDisplay.style.display = 'none';
+                    resetGame(); 
+                }
+            }, 1000);
+        }
+
+        function startTimer() {
+            let timeLeft = BETTING_TIME;
+            timerDisplay.textContent = timeLeft;
+            timerDisplay.style.display = 'block';
+
+            if (timerId) {
+                clearInterval(timerId);
+            }
+
+            timerId = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerId);
+                    timerDisplay.style.display = 'none';
+                    
+                    if (gamePhase === 'betting') {
+                        if (totalBet > 0) {
+                            startDealing(); 
+                        } else {
+                            messageArea.textContent = "該局無人下注，將自動重新開始新局...";
+                            startAutoNewGameTimer(POST_GAME_TIME); 
+                        }
+                    }
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerId) {
+                clearInterval(timerId);
+                timerId = null;
+            }
+            timerDisplay.style.display = 'none';
+        }
+
+        function toggleBettingUI(enabled) {
+            chipWrappers.forEach(wrapper => wrapper.style.pointerEvents = enabled ? 'auto' : 'none');
+            
+            betSpots.forEach(spot => {
+                const spotId = spot.dataset.spot;
+                
+                if (enabled) {
+                    if (activeSpotId === null) {
+                        spot.style.pointerEvents = 'auto';
+                        spot.classList.remove('locked', 'active-bet');
+                    } else if (activeSpotId === spotId) {
+                        spot.style.pointerEvents = 'auto';
+                        spot.classList.remove('locked');
+                        spot.classList.add('active-bet');
+                    } else {
+                        spot.style.pointerEvents = 'none';
+                        spot.classList.add('locked');
+                        spot.classList.remove('active-bet');
+                    }
+                } else {
+                    spot.style.pointerEvents = 'none';
+                    spot.classList.add('locked'); 
+                }
+            });
+        }
+
+        function resetGame() {
+            gamePhase = 'betting';
+            dealtCards = [];
+            totalBet = 0;
+            activeSpotId = null;
+            
+            betSpots.forEach(spot => {
+                spot.querySelector('.current-bet').textContent = `籌碼: 0`;
+            });
+            
+            renderCards(); 
+            
+            actionButtons.classList.remove('active');
+
+            toggleBettingUI(true); 
+            stopTimer(); 
+            
+            messageArea.textContent = `請選擇籌碼並點擊一個座位開始下注 (10秒倒數開始)。`;
+            startTimer();
+        }
+
+        // -------------------- 遊戲流程 (新增結果樣式和籌碼阻擋) --------------------
+        
+        function startDealing() {
+            gamePhase = 'waiting_action';
+            toggleBettingUI(false); 
+            stopTimer(); 
+            
+            dealtCards = [];
+            let card1 = drawCard();
+            let card2 = drawCard();
+            
+            const val1 = getCardValue(card1);
+            const val2 = getCardValue(card2);
+
+            if (val1 > val2) {
+                [card1, card2] = [card2, card1];
+            }
+            dealtCards = [card1, card2];
+            
+            renderCards(dealtCards[0], dealtCards[1], 'BACK'); 
+            positionCardDisplay(activeSpotId);
+
+            actionButtons.classList.add('active');
+            
+            // 檢查射門所需的籌碼是否足夠 (如果需要再次下注)
+            shootBtn.disabled = (playerChips < totalBet); 
+            foldBtn.disabled = false;
+            
+            shootBtn.style.display = 'inline-block';
+            foldBtn.style.display = 'inline-block';
+            
+            const [c1Rank, c2Rank] = dealtCards.map(c => c.split('_')[0]);
+            
+            if (shootBtn.disabled) {
+                messageArea.textContent = `⚠️ 籌碼不足以加註 $${totalBet} 射門。您只能選擇棄牌。`;
+            } else {
+                messageArea.textContent = `牌已發出： ${c1Rank} 和 ${c2Rank}。請選擇「射門」(需加註 $${totalBet}) 或「棄牌」。`;
+            }
+        }
+
+        function handleShoot() {
+            if (gamePhase !== 'waiting_action') return;
+            // 由於 startDealing 已檢查，這裡只需要快速再檢查一次
+            if (playerChips < totalBet) return; 
+
+            // 1. 再次下注 (Double Down)
+            playerChips -= totalBet; 
+            playerChipsDisplay.textContent = playerChips;
+            const totalBetAfterShoot = totalBet * 2; 
+
+            // 2. 翻開第三張牌
+            const card3 = drawCard();
+            
+            const card3Val = getCardValue(card3);
+            const [c1Val, c2Val] = dealtCards.map(getCardValue);
+            
+            let resultMessage = '';
+            let outcome = 'lose'; // 預設失敗或撞柱
+
+            // 3. 判斷勝負
+            if (card3Val === c1Val || card3Val === c2Val) {
+                // 撞柱 (屬於失敗但有額外懲罰)
+                const penalty = totalBet; 
+                playerChips -= penalty; 
+                playerChipsDisplay.textContent = playerChips;
+                resultMessage = `🚨 撞柱！輸掉總下注 $${totalBetAfterShoot}，並額外懲罰 $${penalty}！`;
+                outcome = 'lose';
+            } 
+            else if (card3Val > c1Val && card3Val < c2Val) {
+                // 成功
+                const winnings = totalBetAfterShoot * 3;
+                playerChips += winnings;
+                playerChipsDisplay.textContent = playerChips;
+                resultMessage = `🎉 射龍門成功！贏得三倍籌碼 $${winnings}！`;
+                outcome = 'win';
+            } 
+            else {
+                // 失敗
+                resultMessage = `😭 射門失敗。總下注 $${totalBetAfterShoot} 被收走。`;
+                outcome = 'lose';
+            }
+            
+            // 4. **關鍵：渲染卡牌並應用結果樣式**
+            renderCards(dealtCards[0], dealtCards[1], card3, outcome); 
+            
+            messageArea.textContent = resultMessage;
+
+            // 5. 遊戲結束，開始自動重啟倒數
+            actionButtons.classList.remove('active');
+            gamePhase = 'game_over';
+
+            if (playerChips <= 0) {
+                messageArea.textContent += " 您的籌碼已耗盡，遊戲結束！";
+            } else {
+                 startAutoNewGameTimer(POST_GAME_TIME);
+            }
+        }
+        
+        function handleFold() {
+            if (gamePhase !== 'waiting_action') return;
+
+            messageArea.textContent = `您選擇了棄牌。已下注籌碼 $${totalBet} 被系統收走。`;
+            
+            // 棄牌也算是失敗，將牌置灰
+            renderCards(dealtCards[0], dealtCards[1], dealtCards[2] || 'BACK', 'lose'); 
+            
+            actionButtons.classList.remove('active');
+            gamePhase = 'game_over';
+
+            startAutoNewGameTimer(POST_GAME_TIME); 
+        }
+
+
+        // -------------------- 事件監聽器 (新增籌碼阻擋邏輯) --------------------
+
+        chipWrappers.forEach(wrapper => {
+            wrapper.addEventListener('click', () => {
+                if (gamePhase !== 'betting') return; 
+
+                chipWrappers.forEach(w => w.classList.remove('selected-chip'));
+                selectedChipAmount = parseInt(wrapper.dataset.amount);
+                wrapper.classList.add('selected-chip');
+                
+                if (activeSpotId) {
+                    messageArea.textContent = `已選擇 $${selectedChipAmount} 籌碼。點擊座位 ${activeSpotId} 持續下注...`;
+                } else {
+                    messageArea.textContent = `已選擇 $${selectedChipAmount} 籌碼。點擊一個座位開始遊戲。`;
+                }
+            });
+        });
+
+        betSpots.forEach(spot => {
+            spot.addEventListener('click', () => {
+                const spotId = spot.dataset.spot;
+                
+                if (gamePhase !== 'betting') return;
+                if (selectedChipAmount === 0) {
+                    messageArea.textContent = "請先選擇您要下注的籌碼！";
+                    return;
+                }
+                if (playerChips < selectedChipAmount) {
+                    messageArea.textContent = "您的籌碼不足，請選擇較小的金額！";
+                    return;
+                }
+                if (activeSpotId !== null && activeSpotId !== spotId) {
+                    messageArea.textContent = `您已選定座位 ${activeSpotId}，無法在其他座位下注！`;
+                    return;
+                }
+                
+                // *** 關鍵新增：阻擋下注後，無法在下一階段射門的情況 ***
+                if (activeSpotId !== null && (playerChips - selectedChipAmount) < (totalBet + selectedChipAmount)) {
+                    messageArea.textContent = `⚠️ 下注後將導致籌碼過少 ($${playerChips - selectedChipAmount})，無法在下一階段加註射門 ($${totalBet + selectedChipAmount})。請減少下注金額或棄牌。`;
+                    return;
+                }
+                
+                // 1. 首次下注：鎖定座位、定位卡牌
+                if (activeSpotId === null) {
+                    activeSpotId = spotId;
+                    toggleBettingUI(true); 
+                }
+
+                // 2. 更新籌碼
+                playerChips -= selectedChipAmount;
+                totalBet += selectedChipAmount; 
+
+                // 3. 更新 UI 顯示
+                playerChipsDisplay.textContent = playerChips;
+                spot.querySelector('.current-bet').textContent = `籌碼: ${totalBet}`;
+                messageArea.textContent = `總下注 $${totalBet}。請在倒數結束前持續下注...`;
+            });
+        });
+
+        shootBtn.addEventListener('click', handleShoot);
+        foldBtn.addEventListener('click', handleFold);
+
+        window.addEventListener('resize', () => {
+            if (activeSpotId && gamePhase !== 'betting') {
+                 positionCardDisplay(activeSpotId);
+            }
+        });
+
+        resetGame(); 
+    </script>
+</body>
+</html>
