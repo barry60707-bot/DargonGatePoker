@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>撲克牌射龍門 Demo (優化版)</title>
+    <title>撲克牌射龍門 Demo (邏輯與穩定修正版)</title>
     <style>
         /* 基礎樣式 (沿用) */
         body {
@@ -27,7 +27,7 @@
             min-height: 550px;
         }
 
-        /* -------------------- 玩家資訊/計時器 -------------------- */
+        /* -------------------- 玩家資訊/計時器 (沿用) -------------------- */
         
         #player-info {
             position: absolute;
@@ -55,7 +55,7 @@
             z-index: 10;
         }
 
-        /* -------------------- 下注座位 (四個座位) -------------------- */
+        /* -------------------- 下注座位 (沿用) -------------------- */
         
         #betting-spots {
             display: flex;
@@ -97,7 +97,7 @@
             font-weight: bold;
         }
 
-        /* -------------------- 籌碼選擇 (圖片化) -------------------- */
+        /* -------------------- 籌碼選擇 (沿用) -------------------- */
         
         #chip-selection {
             position: absolute;
@@ -126,25 +126,22 @@
             box-shadow: 0 0 15px #ffeb3b;
         }
 
-        /* -------------------- 卡牌顯示區 (關鍵修改) -------------------- */
+        /* -------------------- 卡牌顯示區 (穩定佈局修正) -------------------- */
         #card-wrapper {
             position: absolute;
             width: 0px; 
             left: 0;
-            top: 100px; 
+            top: 150px; 
+            height: 130px; 
             transition: width 0.5s, left 0.5s;
         }
 
         #card-display {
-            display: flex;
-            /* 讓項目居中排列，並從頂部對齊 */
-            justify-content: center;
-            align-items: flex-start; /* 讓卡牌從頂部對齊 */
-            gap: 10px; 
-            min-height: 150px; 
             position: relative;
-            transform: scale(1); 
-            transform-origin: center center;
+            /* 修正：讓 card-display 實際寬度只包含兩張牌間距，確保絕對定位基準穩定 */
+            width: 190px; 
+            height: 120px;
+            margin: 0 auto; 
         }
 
         .card {
@@ -154,32 +151,49 @@
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
             background-size: cover;
             background-position: center;
-            position: relative;
-            /* 過渡效果 */
-            transition: margin-top 0.5s, transform 0.5s, box-shadow 0.5s, filter 0.5s; 
+            position: absolute; 
+            transition: transform 0.5s, box-shadow 0.5s, filter 0.5s, opacity 0.5s; 
         }
         
-        /* 射門牌樣式：將第三張牌往上抬，並放在中間兩張牌的上方空間 */
-        .card:nth-child(3) {
-            margin-top: -60px; /* 向上抬高，使其與前兩張牌重疊 */
-            z-index: 5; /* 確保它在上面 */
+        /* 定位 - 卡牌 1 (左邊) */
+        .card:nth-child(1) {
+            left: 0;
+            top: 10px; /* 稍微下移 */
+            z-index: 2;
         }
         
-        /* -------------------- 結果視覺回饋 (新增) -------------------- */
-        
-        /* 成功發光樣式 */
-        .card.win {
-            box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.8), 
-                        0 0 5px 1px rgba(255, 255, 255, 0.8); /* 金色發光 */
-            transform: scale(1.05); /* 輕微放大 */
+        /* 定位 - 卡牌 2 (右邊) */
+        .card:nth-child(2) {
+            right: 0;
+            top: 10px;
+            z-index: 2;
         }
 
-        /* 失敗置灰樣式 */
+        /* 定位 - 卡牌 3 (射門牌，居中並重疊，更穩定) */
+        .card:nth-child(3) {
+            left: 50%;
+            top: 0; 
+            margin-left: -40px; 
+            z-index: 5; 
+            transform: scale(1.05); 
+        }
+        
+        /* -------------------- 結果視覺回饋 (沿用) -------------------- */
+        
+        .card.win {
+            box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.8), 
+                        0 0 5px 1px rgba(255, 255, 255, 0.8); 
+        }
+
         .card.lose {
-            filter: grayscale(100%) brightness(0.7); /* 變灰且變暗 */
+            filter: grayscale(100%) brightness(0.7); 
             opacity: 0.7;
         }
 
+        .card.win:nth-child(3), .card.lose:nth-child(3) {
+            transform: scale(1.15); 
+        }
+        
         /* -------------------- 動作按鈕 (沿用) -------------------- */
         #action-buttons {
             position: absolute;
@@ -347,13 +361,17 @@
             return card;
         }
 
-        // -------------------- 渲染卡牌 (新增結果樣式處理) --------------------
-        // result: 'win', 'lose', 'none'
+        // -------------------- 渲染卡牌 (沿用) --------------------
         function renderCards(card1 = null, card2 = null, card3 = null, result = 'none') {
             cardDisplay.innerHTML = '';
             
-            const allCards = [card1, card2, card3];
-            const cardsToRender = allCards.filter(c => c !== null); 
+            const cardsToRender = [card1, card2, card3].filter(c => c !== null); 
+
+            if (cardsToRender.length > 0) {
+                 cardWrapper.style.width = `190px`; 
+            } else {
+                 cardWrapper.style.width = `0px`; 
+            }
 
             cardsToRender.forEach((cardSymbol, index) => {
                 const cardElement = document.createElement('div');
@@ -368,22 +386,12 @@
 
                 cardElement.style.backgroundImage = `url('${imageUrl}')`;
                 
-                // 應用結果樣式 (僅在遊戲結束時應用)
                 if (result !== 'none') {
                     cardElement.classList.add(result);
                 }
                 
                 cardDisplay.appendChild(cardElement);
             });
-
-            if (cardsToRender.length > 0) {
-                const cardWidth = 80;
-                const cardGap = 10;
-                const cardDisplayWidth = (cardsToRender.length * cardWidth) + ((cardsToRender.length - 1) * cardGap);
-                cardWrapper.style.width = `${cardDisplayWidth}px`;
-            } else {
-                cardWrapper.style.width = `0px`;
-            }
         }
         
         function positionCardDisplay(spotId) {
@@ -395,7 +403,7 @@
             
             const spotCenter = spotRect.left + spotRect.width / 2 - gameAreaRect.left;
             
-            const cardDisplayWidth = parseInt(cardWrapper.style.width) || 260;
+            const cardDisplayWidth = parseInt(cardWrapper.style.width) || 190; 
             const newLeft = spotCenter - cardDisplayWidth / 2;
 
             cardWrapper.style.left = `${newLeft}px`;
@@ -507,11 +515,22 @@
             toggleBettingUI(true); 
             stopTimer(); 
             
-            messageArea.textContent = `請選擇籌碼並點擊一個座位開始下注 (10秒倒數開始)。`;
+            selectDefaultChip(); 
+
+            messageArea.textContent = `請點擊一個座位開始下注 (10秒倒數開始)。`;
             startTimer();
         }
 
-        // -------------------- 遊戲流程 (新增結果樣式和籌碼阻擋) --------------------
+        function selectDefaultChip() {
+            const defaultChipWrapper = document.querySelector('.chip-wrapper[data-amount="100"]');
+            if (defaultChipWrapper) {
+                chipWrappers.forEach(w => w.classList.remove('selected-chip'));
+                selectedChipAmount = 100;
+                defaultChipWrapper.classList.add('selected-chip');
+            }
+        }
+
+        // -------------------- 遊戲流程 (沿用損益修正) --------------------
         
         function startDealing() {
             gamePhase = 'waiting_action';
@@ -535,7 +554,6 @@
 
             actionButtons.classList.add('active');
             
-            // 檢查射門所需的籌碼是否足夠 (如果需要再次下注)
             shootBtn.disabled = (playerChips < totalBet); 
             foldBtn.disabled = false;
             
@@ -550,55 +568,59 @@
                 messageArea.textContent = `牌已發出： ${c1Rank} 和 ${c2Rank}。請選擇「射門」(需加註 $${totalBet}) 或「棄牌」。`;
             }
         }
-
+        
         function handleShoot() {
             if (gamePhase !== 'waiting_action') return;
-            // 由於 startDealing 已檢查，這裡只需要快速再檢查一次
             if (playerChips < totalBet) return; 
 
             // 1. 再次下注 (Double Down)
             playerChips -= totalBet; 
             playerChipsDisplay.textContent = playerChips;
-            const totalBetAfterShoot = totalBet * 2; 
+            const totalBetAfterShoot = totalBet * 2; // 總下注金額 (已從籌碼扣除)
 
-            // 2. 翻開第三張牌
             const card3 = drawCard();
             
             const card3Val = getCardValue(card3);
             const [c1Val, c2Val] = dealtCards.map(getCardValue);
             
             let resultMessage = '';
-            let outcome = 'lose'; // 預設失敗或撞柱
+            let outcome = 'lose'; 
+            let netGain = 0; 
 
-            // 3. 判斷勝負
+            // 2. 判斷勝負及計算損益
             if (card3Val === c1Val || card3Val === c2Val) {
-                // 撞柱 (屬於失敗但有額外懲罰)
+                // 撞柱：輸掉總下注金額 (已扣除) + 額外懲罰
                 const penalty = totalBet; 
                 playerChips -= penalty; 
                 playerChipsDisplay.textContent = playerChips;
-                resultMessage = `🚨 撞柱！輸掉總下注 $${totalBetAfterShoot}，並額外懲罰 $${penalty}！`;
+                
+                netGain = -(totalBetAfterShoot + penalty); 
+                resultMessage = `🚨 撞柱！輸掉總下注 $${totalBetAfterShoot}，並額外懲罰 $${penalty} (淨虧損 $${Math.abs(netGain)})！`;
                 outcome = 'lose';
             } 
             else if (card3Val > c1Val && card3Val < c2Val) {
-                // 成功
-                const winnings = totalBetAfterShoot * 3;
-                playerChips += winnings;
+                // 成功：獲得 3 倍總下注的獎金 (包含本金)
+                const grossWinnings = totalBetAfterShoot * 3; 
+                playerChips += grossWinnings; 
+                
+                netGain = grossWinnings - totalBetAfterShoot; 
                 playerChipsDisplay.textContent = playerChips;
-                resultMessage = `🎉 射龍門成功！贏得三倍籌碼 $${winnings}！`;
+
+                resultMessage = `🎉 射龍門成功！贏得總獎金 $${grossWinnings} (淨利潤 $${netGain})！`;
                 outcome = 'win';
             } 
             else {
-                // 失敗
-                resultMessage = `😭 射門失敗。總下注 $${totalBetAfterShoot} 被收走。`;
+                // 失敗：輸掉總下注金額 (已扣除，無需額外操作)
+                netGain = -totalBetAfterShoot;
+                resultMessage = `😭 射門失敗。總下注 $${totalBetAfterShoot} 被收走 (淨虧損 $${totalBetAfterShoot})。`;
                 outcome = 'lose';
             }
             
-            // 4. **關鍵：渲染卡牌並應用結果樣式**
             renderCards(dealtCards[0], dealtCards[1], card3, outcome); 
+            positionCardDisplay(activeSpotId);
             
             messageArea.textContent = resultMessage;
 
-            // 5. 遊戲結束，開始自動重啟倒數
             actionButtons.classList.remove('active');
             gamePhase = 'game_over';
 
@@ -614,8 +636,7 @@
 
             messageArea.textContent = `您選擇了棄牌。已下注籌碼 $${totalBet} 被系統收走。`;
             
-            // 棄牌也算是失敗，將牌置灰
-            renderCards(dealtCards[0], dealtCards[1], dealtCards[2] || 'BACK', 'lose'); 
+            renderCards(dealtCards[0], dealtCards[1], 'BACK', 'lose'); 
             
             actionButtons.classList.remove('active');
             gamePhase = 'game_over';
@@ -624,7 +645,7 @@
         }
 
 
-        // -------------------- 事件監聽器 (新增籌碼阻擋邏輯) --------------------
+        // -------------------- 事件監聽器 (修正籌碼防呆邏輯) --------------------
 
         chipWrappers.forEach(wrapper => {
             wrapper.addEventListener('click', () => {
@@ -647,7 +668,8 @@
                 const spotId = spot.dataset.spot;
                 
                 if (gamePhase !== 'betting') return;
-                if (selectedChipAmount === 0) {
+                
+                if (selectedChipAmount === 0) { 
                     messageArea.textContent = "請先選擇您要下注的籌碼！";
                     return;
                 }
@@ -660,23 +682,25 @@
                     return;
                 }
                 
-                // *** 關鍵新增：阻擋下注後，無法在下一階段射門的情況 ***
-                if (activeSpotId !== null && (playerChips - selectedChipAmount) < (totalBet + selectedChipAmount)) {
-                    messageArea.textContent = `⚠️ 下注後將導致籌碼過少 ($${playerChips - selectedChipAmount})，無法在下一階段加註射門 ($${totalBet + selectedChipAmount})。請減少下注金額或棄牌。`;
+                // *** 關鍵修正：籌碼防呆邏輯 ***
+                const potentialTotalBet = totalBet + selectedChipAmount;
+                const requiredShootAmount = potentialTotalBet; // 射門時需要加註的金額等於總下注額
+                const remainingChipsAfterBet = playerChips - selectedChipAmount;
+
+                // 判斷：下注後的剩餘籌碼 < 射門所需加註金額
+                if (activeSpotId !== null && remainingChipsAfterBet < requiredShootAmount) {
+                    messageArea.textContent = `⚠️ 下注後 ($${potentialTotalBet}) 將導致籌碼過少 ($${remainingChipsAfterBet})，不足以在下一階段加註射門 ($${requiredShootAmount})。請減少下注金額。`;
                     return;
                 }
                 
-                // 1. 首次下注：鎖定座位、定位卡牌
                 if (activeSpotId === null) {
                     activeSpotId = spotId;
                     toggleBettingUI(true); 
                 }
 
-                // 2. 更新籌碼
                 playerChips -= selectedChipAmount;
                 totalBet += selectedChipAmount; 
 
-                // 3. 更新 UI 顯示
                 playerChipsDisplay.textContent = playerChips;
                 spot.querySelector('.current-bet').textContent = `籌碼: ${totalBet}`;
                 messageArea.textContent = `總下注 $${totalBet}。請在倒數結束前持續下注...`;
@@ -692,6 +716,7 @@
             }
         });
 
+        // 遊戲開始
         resetGame(); 
     </script>
 </body>
