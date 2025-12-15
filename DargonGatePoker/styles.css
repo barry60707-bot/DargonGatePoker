@@ -1,0 +1,191 @@
+/* 設定全域樣式 */
+body {
+    font-family: '微軟正黑體', 'Microsoft JhengHei', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4; /* 淺灰色背景 */
+    color: #333;
+}
+
+/* 導航欄樣式 */
+#sidebar {
+    width: 250px;
+    height: 100vh; /* 佔滿整個視口高度 */
+    position: fixed; /* 固定在左側 */
+    top: 0;
+    left: 0;
+    background-color: #2c3e50; /* 深藍色背景 */
+    color: white;
+    padding: 20px;
+    box-sizing: border-box; /* 讓 padding 不增加寬度 */
+    overflow-y: auto; /* 選單內容過長時可滾動 */
+}
+
+#sidebar h1 {
+    font-size: 1.5em;
+    margin-top: 0;
+    text-align: center;
+}
+
+#sidebar p {
+    font-size: 0.9em;
+    text-align: center;
+}
+
+#sidebar hr {
+    border-color: #34495e; /* 分隔線顏色 */
+}
+
+#sidebar nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+#sidebar nav li {
+    margin: 10px 0;
+}
+
+#sidebar nav a {
+    text-decoration: none;
+    color: white;
+    display: block;
+    padding: 10px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+/* 導航選單活躍狀態（當前頁面） */
+#sidebar nav a.active {
+    background-color: #e74c3c; /* 醒目的當前頁面顏色 */
+    font-weight: bold;
+}
+
+#sidebar nav a:not(.active):hover {
+    background-color: #3498db; /* 鼠標懸停時的亮藍色 */
+}
+
+/* 主要內容區塊樣式 */
+#content {
+    margin-left: 250px; /* 留出左側選單的空間 */
+    padding: 20px 40px;
+}
+
+#content section {
+    padding: 20px 0;
+    margin-bottom: 30px;
+}
+
+#content h2 {
+    color: #e74c3c; /* 醒目的標題顏色 */
+    padding-bottom: 5px;
+    border-bottom: 2px solid #e74c3c;
+}
+
+#content h3 {
+    color: #2c3e50;
+    margin-top: 25px;
+}
+
+/* 列表樣式調整 */
+#content ul, #content ol {
+    margin-left: 20px;
+    line-height: 1.6;
+}
+
+/* 圖片樣式 */
+#content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 15px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* 表格樣式 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background-color: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #3498db;
+    color: white;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* 頁尾樣式 */
+footer {
+    text-align: center;
+    padding: 10px 0;
+    font-size: 0.8em;
+    color: #999;
+}
+
+/* 1. 隱藏燈箱容器 (預設隱藏) */
+.lightbox-target {
+    position: fixed; /* 固定在視窗上 */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85); /* 半透明黑色背景 */
+    display: none; /* 預設隱藏 */
+    z-index: 1000; /* 確保在所有元素之上 */
+    text-align: center;
+    padding-top: 50px; /* 留出頂部空間 */
+    box-sizing: border-box;
+}
+
+/* 2. 當燈箱被連結目標鎖定時，顯示它 */
+.lightbox-target:target {
+    display: block;
+}
+
+/* 3. 放大後的圖片樣式 */
+.lightbox-target img {
+    max-width: 90%; /* 最大寬度佔視窗 90% */
+    max-height: 90%; /* 最大高度佔視窗 90% */
+    margin: 0 auto; /* 居中 */
+    display: block;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    border: none; /* 移除 GDD 樣式中的邊框 */
+}
+
+/* 4. 關閉按鈕樣式 */
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    text-decoration: none;
+    font-size: 30px;
+    font-weight: bold;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.lightbox-close:hover {
+    opacity: 1;
+}
+
+/* 為了美觀，將內容區圖片的預設邊框和陰影移除 (防止雙重陰影) */
+#content img {
+    transition: transform 0.2s; /* 增加點擊動態感 */
+}
+#content a:hover img {
+    transform: scale(1.02);
+}

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2. 遊戲規則 - 射龍門</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div id="sidebar">
+        <h1>射龍門（暫定）</h1>
+        <p>GDD 版本：1.0</p>
+        <hr>
+        <nav>
+            <ul>
+                <li><a href="index.html">1. 專案概要</a></li>
+                <li><a href="rules.html" class="active">2. 遊戲規則</a></li>
+                <li><a href="math.html">3. 機率與數學模型</a></li>
+                <li><a href="uiux.html">4. 介面與操作流程</a></li>
+				<li><a href="game_demo.html" target="_blank">5. 遊戲流程Demo</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div id="content">
+        <section>
+            <h2>2. 遊戲規則 (Game Rules) </h2>
+
+            <h3>2.1 遊戲流程 </h3>
+            <ol>
+                <li>玩家下前注（Base Bet） → 開啟兩張牌 </li>
+                <li>玩家選擇是否下第二注（Double/Continue Bet）</li>
+                <li>若下注 → 開第三張牌 </li>
+                <li>判定「射入」「撞柱」或「失敗」並結算 </li>
+                <li>回合結束 → 進入下一局 </li>
+            </ol>
+
+            <h3>2.2 賠率與事件說明 </h3>
+            <ul>
+                <li><strong>射入</strong> （第三張落在兩張牌之間）：賠率 3X（待討論） </li>
+                <li><strong>撞柱</strong> （第三張與任一張同點數）：額外賠付下注金額 ( -1X ) </li>
+                <li><strong>失敗</strong> （在外側）：全損 </li>
+                <li><strong>放棄第二注</strong> ：只損前注 </li>
+            </ul>
+
+            <h3>2.3 牌值定義</h3>
+            <ul>
+                <li>A = 1 </li>
+                <li>J = 11 </li>
+                <li>Q = 12 </li>
+                <li>K = 13 </li>
+            </ul>
+
+            <h3>2.4 其他規則 </h3>
+            <ul>
+                <li>撲克牌數量為四副 (降低玩家算機率可能性)</li>
+                <li>撲克牌每局進行重新洗牌</li>
+                <li>每一張桌子最多五名玩家同時進行遊戲 </li>
+            </ul>
+
+            <h3>2.5 遊戲進行流程圖</h3>
+				<a href="#lightbox-flowchart">
+					<img src="images/flowchart.png" alt="遊戲進行流程圖">
+				</a>
+        </section>
+				<div id="lightbox-flowchart" class="lightbox-target">
+					<img src="images/flowchart.png" alt="遊戲進行流程圖 - 放大">
+					<a href="#_" class="lightbox-close">X</a>
+				</div>
+        <footer>
+            <p>&copy; 2025 射龍門 GDD</p>
+        </footer>
+    </div>
+
+</body>
+</html>
